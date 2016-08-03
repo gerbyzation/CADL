@@ -12,8 +12,8 @@ This repository contains homework assignments for the <a href="https://www.kaden
 | --- | --- | --- |
 |Installation| **[Installation](#installation-preliminaries)** | Setting up Python/Notebook and necessary Libraries. |
 |Preliminaries| **[Preliminaries with Python](session-0)** | Basics of working with Python and images. |
-|1| **[Creating a Dataset/Computing with Tensorflow](session-1)** | Working with a small dataset of images.  Dataset preprocessing.  Tensorflow basics.  Sorting/organizing a dataset. |
-|2| **[TBA](session-2)** | TBA. |
+|1| **[Creating a dataset/Computing with Tensorflow](session-1)** | Working with a small dataset of images.  Dataset preprocessing.  Tensorflow basics.  Sorting/organizing a dataset. |
+|2| **[Training a network/Teaching a network to paint](session-2)** | Learn how to create a Neural Network.  Learn to use a neural network to paint an image.  Apply creative thinking to the inputs, outputs, and definition of a network. |
 |3| **[TBA](session-3)** | TBA. |
 |4| **[TBA](session-4)** | TBA. |
 |5| **[TBA](session-5)** | TBA. |
@@ -65,16 +65,23 @@ $ cd
 $ docker-machine ip
 ```
 
-You should see your virtual machine's IP address as a result of the last command.  This is the location of your virtual machine.  <b>NOTE THIS IP ADDRESS</b>, as we'll need it in a second.  Now run the following command, which will download about ~530 MB containing everything we need to run tensorflow, python, and jupyter notebook (again, ignore the "$" at the beginning of the line only)!
+You should see your virtual machine's IP address as a result of the last command.  This is the location of your virtual machine.  <b>NOTE THIS IP ADDRESS</b>, as we'll need it in a second.  
+
+This next command will move to your Windows home directory, then create a new directory called "tensorflow", and then print out what the full path to that directory is.  PLEASE NOTE DOWN THIS DIRECTORY.  This is where everything will happen, and I'll explain that in a minute.
 
 ```shell
 $ cd
 $ mkdir tensorflow
 $ echo /$(pwd)/tensorflow
+```
+
+Now run the following command, which will download about ~530 MB containing everything we need to run tensorflow, python, and jupyter notebook (again, ignore the "$" at the beginning of the line only)!
+
+```shell
 $ docker run -it -p 8888:8888 -p 6006:6006 -v /$(pwd)/tensorflow:/notebooks --name tf pkmital/tf.0.9.0-py.3.4
 ```
 
-What this is doing is first creating a directory called tensorflow in the home directory, wherever that may be for your computer.  The echo command is showing you exactly where that directory is.  Then we use docker to mirror that directory on a virutal machine.  The location of that echo'ed directory is `/notebooks` on the virtual machine.
+What this is doing is first creating a directory called tensorflow in the home directory, wherever that may be for your computer.  The echo command that we just ran, and I asked you note down, is showing you exactly where that directory is.  So on your Windows machine, you will want to put files inside this directory only when coding w/ Tensorflow.  We will use Docker to mirror that directory on a virutal machine which has everything necessary for us to code in Python and Tensorflow.  _Whatever is in that directory will be mirrored on the virtual machine's directory under `/notebooks`._
 
 You can also try running the docker run command with any other directory. For instance:
 
@@ -99,16 +106,38 @@ $ cd
 $ docker start -i tf
 ```
 
-You should have a new folder "tensorflow" inside your Home directory.  This directory will be empty to begin with.  Please make sure you do everything inside this directory only or else any files you make on your virtual machine WILL BE ERASED once it is shutdown!  When you clone the CADL repository, or expand the zip file downloads contents inside this directory via your Windows machine (it will be in your Home directory under a folder "tensorflow"), then you will be able to access it via your Docker instance.
+Notice that the command prompt will now be `#` instead of `$`.  You should have a new folder "tensorflow" inside your Home directory.  This directory will be empty to begin with.  Please make sure you do everything inside this directory only or else any files you make on your virtual machine WILL BE ERASED once it is shutdown!  When you clone the CADL repository, or expand the zip file downloads contents inside this directory via your Windows machine (it will be in your Home directory under a folder "tensorflow"), then you will be able to access it via your Docker instance.
+
+For instance, after running the `docker start -i tf` command, try going into the directory `/notebooks`:
+
+```shell
+# cd /notebooks
+```
+
+And then git cloning this repo:
+
+```shell
+# git clone https://github.com/pkmital/CADL
+```
+
+Now, inside the directory `/notebooks/CADL`, you will have this entire repo.  Alternatively, you could download a zip file of this repo and use Windows to place it in the directory you noted down before.
 
 <a name="jupyter-notebook"></a>
 ## Jupyter Notebook
 
 ### OSX/Linux
 
-The easiest way to ensure you have Python 3.4 or higher and Jupter Notebook is to install Anaconda for Python 3.5 located here:
+Note: Windows/Docker users should scroll past this section to ["Windows/Docker"](#windows-docker-containers).  For OSX/Linux users, the easiest way to ensure you have Python 3.4 or higher and Jupter Notebook is to install Anaconda for Python 3.5 located here:
 
 [OSX](https://docs.continuum.io/anaconda/install#anaconda-for-os-x-command-line-install) or [Linux](https://docs.continuum.io/anaconda/install#linux-install)
+
+Make sure you restart your Terminal after you install Anaconda as there are some PATH variables that have to be set.
+
+Then run the following:
+
+```shell
+$ curl https://bootstrap.pypa.io/ez_setup.py -o - | python
+```
 
 If you already have conda, but only have Python 2, you can very easily [add a new environment w/ Python 3](http://conda.pydata.org/docs/py2or3.html#create-a-python-3-5-environment) and switch back and forth as needed.  Or if you do not have Anaconda, but have a system based install, I'd really recommend either using Anaconda or [pyenv](https://github.com/yyuu/pyenv) to help you manage both python installations.
 
@@ -133,13 +162,25 @@ Then please try first running:
 $ ipython3 kernel install
 ```
 
+<a name="windows-docker-containers">
 ### Windows/Docker Containers
 
-For Windows users making use of Docker, or for OSX users that had trouble w/ the pip/Anaconda install, once inside your Docker container as outlined above, you can launch notebook like so:
+For users running firewalls, you must make sure you have an exception as per [Jupyter Notebooks Firewall Instructions](http://jupyter-notebook.readthedocs.io/en/latest/public_server.html#firewall-setup) otherwise you may not be able to interact with the notebook.  Namely, you will need to allow connections from 127.0.0.1 (localhost) on ports from 49152 to 65535.  Once inside your Docker container as outlined above, you can now launch notebook like so:
 
 ```shell
 $ cd /notebooks
 $ jupyter notebook &
+```
+
+Note on Virtual versus Windows Directories:
+
+This is tricky to grasp, mostly because I didn't explain it. Docker is "virtual" computer running inside your computer. It has its own filesystem and its own directories. So you can't reference your Windows machine's directories inside this machine. When you first ran docker (e.g. `$ docker run -it -p 8888:8888 -p 6006:6006 -v /$(pwd)/tensorflow:/notebooks --name tf pkmital/tf.0.9.0-py.3.4`) it included as part of its command: `-v /$(pwd)/tensorflow:/notebooks`. What that was doing is "mirroring" a directory on your Windows machine inside your Virtual machine. So whatever was in your Windows machine under the directory `/$(pwd)/tensorflow` would appear in the Virtual machine under `/notebooks`. That Windows directory is likely `/Users/<YOURUSERNAME>/tensorflow`. So _ONLY_ inside that directory, create it if it doesn't exist, should you put files in order to access it on the Virtual machine.
+
+So let's say your Username was "pkmital". Then your home directory would be `/Users/pkmital`, and you would have mirrored `/Users/pkmital/tensorflow` on your Windows Machine to the Virtual machine under `/notebook`. Now let's say I create a directory `/Users/pkmital/tensorflow/images` on my Windows Machine, and then put a bunch of png files in there. I will then see them in my Virtual machine under `/notebook/images`.  If I put the CADL repository inside `/Users/pkmital/tensorflow`, then I should have `/Users/pkmital/tensorflow/CADL/session-1/session-1.ipynb` and on the Virtual machine, it will be in `/notebooks/CADL/session-1/session-1.ipynb` - From this notebook, running on the virtual machine, accessed with Jupyter Notebook, I would access my images like so:
+
+```python
+import os
+os.listdir('../../images')
 ```
 
 <a name="navigating-to-notebook"></a>
@@ -175,7 +216,22 @@ This will launch the Jupyter Notebook where you will be able to interact with th
 <a name="installing-python-packages"></a>
 ## Installing Python Packages
 
-Packages are libraries or useful extensions to the standard python libraries.  In this course, we'll be using a few including Tensorflow, NumPy, MatPlotLib, SciPy, SciKit-Image, and SciKit-Learn.  Windows users will already have these libraries since the Docker container includes these.  However, if you needed to, you can install these using "pip", which is the python package manager.  OSX/Linux users should follow these steps just to be sure they have the latest versions of these packages. In Python 3.4 and higher, `pip` comes with any standard python installation.  In order to use `pip`, you'll write:
+Packages are libraries or useful extensions to the standard python libraries.  In this course, we'll be using a few including Tensorflow, NumPy, MatPlotLib, SciPy, SciKit-Image, and SciKit-Learn.  Windows users will already have these libraries since the Docker container includes these.  However, if you needed to, you can install these using "pip", which is the python package manager.  OSX/Linux users should follow these steps just to be sure they have the latest versions of these packages. In Python 3.4 and higher, `pip` comes with any standard python installation.  In order to use `pip`, first make sure you are using the correct version.  One way to do this is check which pip you are running:
+
+```shell
+$ which pip
+$ which pip3
+```
+
+Use which `pip` points to the install path that makes the most sense (e.g. Anaconda for OSX users for some reason does not symlink pip3 to the python3 pip, and instead points to the system version of python3).
+
+Then you'll write:
+
+```shell
+$ pip3 install -U pip setuptools
+```
+
+To make sure you have an up to date pip, then:
 
 ```shell
 $ pip3 install some_package
