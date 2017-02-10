@@ -75,12 +75,12 @@ def stylize(content_img, style_img, base_img=None, saveto=None, gif_step=5,
         Final iteration of the stylization.
     """
     # Preprocess both content and style images
-    content_img = make_4d(content_img)
-    style_img = make_4d(style_img)
+    content_img = vgg16.preprocess(content_img, dsize=(224, 224))[np.newaxis]
+    style_img = vgg16.preprocess(style_img, dsize=(224, 224))[np.newaxis]
     if base_img is None:
         base_img = content_img
     else:
-        base_img = make_4d(base_img)
+        base_img = make_4d(vgg16.preprocess(base_img, dsize=(224, 224)))
 
     # Get Content and Style features
     net = vgg16.get_vgg_model()
@@ -93,8 +93,8 @@ def stylize(content_img, style_img, base_img=None, saveto=None, gif_step=5,
         content_features = g.get_tensor_by_name(
             content_layer).eval(feed_dict={
                 x: content_img,
-                'vgg/dropout_1/random_uniform:0': [[1.0]],
-                'vgg/dropout/random_uniform:0': [[1.0]]})
+                'vgg/dropout_1/random_uniform:0': [[1.0] * 4096],
+                'vgg/dropout/random_uniform:0': [[1.0] * 4096]})
         style_layers = ['vgg/conv1_1/conv1_1:0',
                         'vgg/conv2_1/conv2_1:0',
                         'vgg/conv3_1/conv3_1:0',
@@ -105,8 +105,8 @@ def stylize(content_img, style_img, base_img=None, saveto=None, gif_step=5,
             style_activation_i = g.get_tensor_by_name(style_i).eval(
                 feed_dict={
                     x: style_img,
-                    'vgg/dropout_1/random_uniform:0': [[1.0]],
-                    'vgg/dropout/random_uniform:0': [[1.0]]})
+                    'vgg/dropout_1/random_uniform:0': [[1.0] * 4096],
+                    'vgg/dropout/random_uniform:0': [[1.0] * 4096]})
             style_activations.append(style_activation_i)
         style_features = []
         for style_activation_i in style_activations:
@@ -142,7 +142,7 @@ def stylize(content_img, style_img, base_img=None, saveto=None, gif_step=5,
         loss = content_weight * content_loss + style_weight * style_loss
         optimizer = tf.train.AdamOptimizer(0.01).minimize(loss)
 
-        sess.run(tf.initialize_all_variables())
+        sess.run(tf.global_variables_initializer())
         imgs = []
         for it_i in range(n_iterations):
             _, this_loss, synth = sess.run(
@@ -194,7 +194,7 @@ def warp_img(img, dx, dy):
     return warped
 
 
-def test_video(style_img='arles.jpg', videodir='kurosawa'):
+def test_video(style_img='arles.png', videodir='kurosawa'):
     r"""Test for artistic stylization using video.
 
     This requires the python installation of OpenCV for the Deep Flow algorithm.
@@ -253,10 +253,10 @@ def test_video(style_img='arles.jpg', videodir='kurosawa'):
     except ImportError:
         has_cv2 = False
 
-    style_img = plt.imread(style_img)
+    style_img = vgg16.preprocess(plt.imread(style_img)[..., :3])
     content_files = [os.path.join(videodir, f)
                      for f in os.listdir(videodir) if f.endswith('.png')]
-    content_img = plt.imread(content_files[0])
+    content_img = plt.imread(content_files[0])[..., :3]
     from scipy.misc import imresize
     style_img = imresize(style_img, (448, 448)).astype(np.float32) / 255.0
     content_img = imresize(content_img, (448, 448)).astype(np.float32) / 255.0
@@ -272,7 +272,7 @@ def test_video(style_img='arles.jpg', videodir='kurosawa'):
     plt.imsave(fname=content_files[0] + 'stylized.png', arr=stylized)
     imgs.append(stylized)
     for f in content_files[1:]:
-        content_img = plt.imread(f)
+        content_img = plt.imread(f)[..., :3]
         content_img = imresize(content_img, (448, 448)).astype(np.float32) / 255.0
         if has_cv2:
             lum = cv2.cvtColor(content_img, cv2.COLOR_RGB2HSV)[:, :, 2]
@@ -299,15 +299,15 @@ def test():
          'Claude_Monet%2C_Impression%2C_soleil_levant.jpg/617px-Claude_Monet' +
          '%2C_Impression%2C_soleil_levant.jpg?download')
     filepath, _ = urllib.request.urlretrieve(f, f.split('/')[-1], None)
-    style = plt.imread(filepath)
+    style = plt.imread(filepath).astype(np.float32) / 255.0
 
     f = ('https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/' +
          'El_jard%C3%ADn_de_las_Delicias%2C_de_El_Bosco.jpg/640px-El_jard' +
          '%C3%ADn_de_las_Delicias%2C_de_El_Bosco.jpg')
     filepath, _ = urllib.request.urlretrieve(f, f.split('/')[-1], None)
-    content = plt.imread(filepath)
+    content = plt.imread(filepath).astype(np.float32) / 255.0
 
-    stylize(content, style)
+    stylize(content, style, n_iterations=20)
 
 
 if __name__ == '__main__':
